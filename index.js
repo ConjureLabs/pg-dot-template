@@ -1,13 +1,26 @@
 const dotTemplate = require('@conjurelabs/dot-template')
 
+const { PG_DOT_TEMPLATE_REDACTION_MESSAGE = '<REDACTED>' } = process.env
 let setupCalled = false
 
 // proxy to dotTemplate
-module.exports = function pgDotTemplate(path, ...args) {
+module.exports = function pgDotTemplate(path) {
+  // enforce path ending in .sql
+  path = path.replace(/(?:\.sql)?\s*$/i, '.sql')
+
   if (setupCalled === false) {
     throw new Error('pg-dot-template requires .setup() before usage')
   }
-  return dotTemplate(path)(...args)
+
+  const template = dotTemplate(path)
+
+  return (...args) => {
+    if (setupCalled === false) {
+      throw new Error('pg-dot-template requires .setup() before usage')
+    }
+
+    return template(...args)
+  }
 }
 
 module.exports.setup = function setup() {
@@ -30,7 +43,7 @@ module.exports.setup = function setup() {
       const index = pgQueryArgs.indexOf(value)
       return `$${index + 1}`
     },
-    logMutator: () => redactionMessage
+    logMutator: () => PG_DOT_TEMPLATE_REDACTION_MESSAGE
   })
 
   setupCalled = true

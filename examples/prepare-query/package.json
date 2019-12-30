@@ -1,0 +1,15 @@
+{
+  "name": "prepare-query",
+  "version": "0.0.0",
+  "description": "prepares a query using pg-dot-template",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@conjurelabs/dot-template": "2.0.0",
+    "@conjurelabs/pg-dot-template": "file:../..",
+    "pg": "7.17.0"
+  }
+}

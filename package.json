@@ -24,5 +24,8 @@
   "peerDependencies": {
     "@conjurelabs/dot-template": ">= 2.0.0",
     "pg": ">= 7.0.0"
+  },
+  "devDependencies": {
+    "@conjurelabs/dot-template": "2.0.0"
   }
 }
