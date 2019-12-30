@@ -1,10 +1,6 @@
-const { Client } = require('pg')
 const pgDotTemplate = require('@conjurelabs/pg-dot-template')
 
 pgDotTemplate.setup()
-
-const client = new Client()
-client.connect()
 
 async function main() {
   const template = pgDotTemplate('select-accounts')
