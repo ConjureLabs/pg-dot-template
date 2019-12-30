@@ -1,7 +1,12 @@
 const dotTemplate = require('@conjurelabs/dot-template')
 
+let setupCalled = false
+
 // proxy to dotTemplate
 module.exports = function pgDotTemplate(path, ...args) {
+  if (setupCalled === false) {
+    throw new Error('pg-dot-template requires .setup() before usage')
+  }
   return dotTemplate(path)(...args)
 }
 
@@ -27,4 +32,6 @@ module.exports.setup = function setup() {
     },
     logMutator: () => redactionMessage
   })
+
+  setupCalled = true
 }
