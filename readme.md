@@ -17,7 +17,7 @@ npm install @conjurelabs/pg-dot-template
 
 ## use
 
-`pg-dot-template` supports the same features as [`dot-tempalte`](https://github.com/ConjureLabs/dot-template) while adding utilities for dealing with postgres queries
+`pg-dot-template` uses [`dot-tempalte`](https://github.com/ConjureLabs/dot-template) to add extra utilities for dealing with postgres queries
 
 _activity-query.sql_
 ```sql
