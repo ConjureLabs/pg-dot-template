@@ -22,6 +22,9 @@ async function main() {
   console.log('query:')
   console.log(query)
 
+  console.log('query args:')
+  console.log(query.queryArgs)
+
   const result = await client.query(query, query.queryArgs)
   client.end()
 
