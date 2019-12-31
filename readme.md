@@ -180,3 +180,35 @@ const result = await queryString.query()
  */
 console.log(result.queryArgs)
 ```
+
+### using pg's Pool
+
+if you plan to use [`Pool`](https://node-postgres.com/features/pooling) to connect, you will want to call `.connect()` before each query, and then `release()` when finished
+
+passing a general `connection` to `setup()` may seem problematic, but you easily solve this with a simply wrapper:
+
+```js
+const pool = new Pool()
+
+pgDotTemplate.setup({
+  query: async (...args) => {
+    const connection = await pool.connect()
+    return new Promise(async (resolve, reject) => {
+      let result, err
+      
+      try {
+        result = await connection.query(...args)
+      } catch(tryErr) {
+        err = tryErr
+      } finally {
+        connection.release()
+      }
+
+      if (err) {
+        return reject(err)
+      }
+      resolve(result)
+    })
+  }
+})
+```
