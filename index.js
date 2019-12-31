@@ -12,14 +12,21 @@ module.exports = function pgDotTemplate(path) {
     throw new Error('pg-dot-template requires .setup() before usage')
   }
 
-  const template = dotTemplate(path)
+  const prepare = dotTemplate(path)
 
-  return (...args) => {
+  return async (...args) => {
     if (setupCalled === false) {
       throw new Error('pg-dot-template requires .setup() before usage')
     }
 
-    return template(...args)
+    // supporting .text, which pg requires
+    const preparedTemplate = await prepare(...args)
+    Object.defineProperty(preparedTemplate, 'text', {
+      value: preparedTemplate.toString(),
+      writable: false,
+      enumerable: false
+    })
+    return preparedTemplate
   }
 }
 
