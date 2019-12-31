@@ -14,18 +14,28 @@ module.exports = function pgDotTemplate(path) {
 
   const prepare = dotTemplate(path)
 
-  return async (...args) => {
+  return async (values, ...tailingArgs) => {
     if (setupCalled === false) {
       throw new Error('pg-dot-template requires .setup() before usage')
     }
 
+    const queryArgs = [] // appended as values are evaluated
+    const preparedTemplate = await prepare(values, ...tailingArgs, queryArgs)
+
     // supporting .text, which pg requires
-    const preparedTemplate = await prepare(...args)
     Object.defineProperty(preparedTemplate, 'text', {
       value: preparedTemplate.toString(),
       writable: false,
       enumerable: false
     })
+
+    // supporting .queryArgs for both the user and query
+    Object.defineProperty(preparedTemplate, 'queryArgs', {
+      value: queryArgs,
+      writable: false,
+      enumerable: false
+    })
+
     return preparedTemplate
   }
 }
@@ -35,8 +45,15 @@ module.exports.setup = function setup() {
   // but prints values to console
   dotTemplate.addHandler({
     expressionPrefix: '$PG',
-    valueMutator: (value, templateArgs, pgQueryArgs) => {
-      const index = pgQueryArgs.indexOf(value)
+    valueMutator: (value, templateArgs, ...tailingArgs) => {
+      const [pgQueryArgs] = tailingArgs.slice(-1)
+      let index = pgQueryArgs.indexOf(value)
+
+      if (index === -1) {
+        index = pgQueryArgs.length
+        pgQueryArgs.push(value)
+      }
+
       return `$${index + 1}`
     },
     logMutator: value => value
@@ -46,8 +63,15 @@ module.exports.setup = function setup() {
   // but prints redacted message to console
   dotTemplate.addHandler({
     expressionPrefix: '!PG',
-    valueMutator: (value, templateArgs, pgQueryArgs) => {
-      const index = pgQueryArgs.indexOf(value)
+    valueMutator: (value, templateArgs, ...tailingArgs) => {
+      const [pgQueryArgs] = tailingArgs.slice(-1)
+      let index = pgQueryArgs.indexOf(value)
+
+      if (index === -1) {
+        index = pgQueryArgs.length
+        pgQueryArgs.push(value)
+      }
+
       return `$${index + 1}`
     },
     logMutator: () => PG_DOT_TEMPLATE_REDACTION_MESSAGE
