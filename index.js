@@ -2,6 +2,7 @@ const dotTemplate = require('@conjurelabs/dot-template')
 
 const { PG_DOT_TEMPLATE_REDACTION_MESSAGE = '<REDACTED>' } = process.env
 let setupCalled = false
+let pgConnection
 
 // proxy to dotTemplate
 module.exports = function pgDotTemplate(path) {
@@ -12,15 +13,15 @@ module.exports = function pgDotTemplate(path) {
     throw new Error('pg-dot-template requires .setup() before usage')
   }
 
-  const prepare = dotTemplate(path)
+  const dotTemplatePrepare = dotTemplate(path)
 
-  return async (values, ...tailingArgs) => {
+  const prepare = async (values, ...tailingArgs) => {
     if (setupCalled === false) {
       throw new Error('pg-dot-template requires .setup() before usage')
     }
 
     const queryArgs = [] // appended as values are evaluated
-    const preparedTemplate = await prepare(values, ...tailingArgs, queryArgs)
+    const preparedTemplate = await dotTemplatePrepare(values, ...tailingArgs, queryArgs)
 
     // supporting .text, which pg requires
     Object.defineProperty(preparedTemplate, 'text', {
@@ -36,11 +37,30 @@ module.exports = function pgDotTemplate(path) {
       enumerable: false
     })
 
+    // convenient method to query pg
+    Object.defineProperty(preparedTemplate, 'query', {
+      value: () => {
+        return pgConnection.query(preparedTemplate, queryArgs)
+      },
+      writable: false,
+      enumerable: false
+    })
+
     return preparedTemplate
   }
+
+  prepare.query = async (...args) => {
+    const preparedTemplate = await preparedTemplate(...args)
+    return preparedTemplate.query()
+  }
+
+  return prepare
 }
 
-module.exports.setup = function setup() {
+module.exports.setup = function setup(pgConnectionArg) {
+  // if consumer wants to call .query directly on return value
+  pgConnection = pgConnectionArg
+
   // returns var index references for postgres queries
   // but prints values to console
   dotTemplate.addHandler({
