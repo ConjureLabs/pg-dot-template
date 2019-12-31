@@ -1,7 +1,7 @@
 {
-  "name": "execute-query",
+  "name": "execute-query-manually",
   "version": "0.0.0",
-  "description": "executes a query, via a prepared template, using pg-dot-template & convenience methods",
+  "description": "executes a query, via a prepared template, using pg-dot-template",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

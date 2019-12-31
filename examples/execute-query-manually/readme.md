@@ -1,8 +1,6 @@
-## execute query
+## execute query manually
 
-this example fills a template sql file and then executes it using a convenience method
-
-it relies on a connection to [the node postgres module](https://node-postgres.com/) being passed through `.setup`
+this example fills a template sql file and then executes it using [the node postgres module](https://node-postgres.com/)
 
 it prints rows to console
 
