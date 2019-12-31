@@ -13,18 +13,16 @@ async function main() {
   // pulls in template
   const template = pgDotTemplate('select-accounts')
 
-  const queryArgs = ['%@gmail.com', 4]
-
   // replace expressions
   const query = await template({
     emailMatch: '%@gmail.com',
     idStart: 4
-  }, queryArgs)
+  })
 
   console.log('query:')
   console.log(query)
 
-  const result = await client.query(query, queryArgs)
+  const result = await client.query(query, query.queryArgs)
   client.end()
 
   console.log('rows:')
