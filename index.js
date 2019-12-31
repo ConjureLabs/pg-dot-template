@@ -40,6 +40,9 @@ module.exports = function pgDotTemplate(path) {
     // convenient method to query pg
     Object.defineProperty(preparedTemplate, 'query', {
       value: () => {
+        if (pgConnection === undefined) {
+          throw new ReferenceError('.query expects a valid pg connection to be passed to .setup(connection)')
+        }
         return pgConnection.query(preparedTemplate, queryArgs)
       },
       writable: false,
