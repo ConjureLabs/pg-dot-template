@@ -60,6 +60,80 @@ module.exports = function pgDotTemplate(path) {
   return prepare
 }
 
+function getQueryArgPlaceholder(value, pgQueryArgs) {
+  let index = pgQueryArgs.indexOf(value)
+
+  if (index === -1) {
+    index = pgQueryArgs.length
+    pgQueryArgs.push(value)
+  }
+
+  return `$${index + 1}`
+}
+
+function getValueType(value) {
+  let valueType = typeof value
+  if (valueType === 'object') {
+    if (value instanceof Date) {
+      valueType = 'date'
+    } else if (Array.isArray(value)) {
+      valueType = 'array'
+    }
+  }
+  return valueType
+}
+
+
+function valueMutator(value, templateArgs, ...tailingArgs) {
+  const [pgQueryArgs] = tailingArgs.slice(-1)
+
+  return valuePlaceholders(value, pgQueryArgs)
+}
+
+function valuePlaceholders(value, pgQueryArgs, nested = false) {
+  const valueType = getValueType(value)
+
+  switch(valueType) {
+    case 'array':
+      if (nested) {
+        throw new TypeError('pg-dot-template does not support nested arrays')
+      }
+      return value.map(subvalue => valuePlaceholders(subvalue, pgQueryArgs, true)).join(', ')
+
+    case 'date':
+    case 'number':
+    case 'string':
+      return getQueryArgPlaceholder(value, pgQueryArgs)
+
+    default:
+      throw new TypeError(`pg-dot-template ${!nested ? '' : 'nested '}expression (${valueType}) had an unexpected value: ${value}`)
+  }
+
+  return queryArgIndex
+}
+
+// this func does not need to throw,
+// since it should have within valuePlaceholders
+// by this point
+function valuePrinted(value, redacted = false, nested = false) {
+  const valueType = getValueType(value)
+
+  switch(valueType) {
+    case 'array':
+      return value.map(subvalue => valuePrinted(subvalue, redacted, true)).join(', ')
+    
+    case 'number':
+      return redacted ? PG_DOT_TEMPLATE_REDACTION_MESSAGE : value
+
+    default:
+      if (redacted) {
+        return `'${PG_DOT_TEMPLATE_REDACTION_MESSAGE}'`
+      }
+      const treatedValue = value.toString().replace(/'/g, '\\\'')
+      return `'${treatedValue}'`
+  }
+}
+
 module.exports.setup = function setup(pgConnectionArg) {
   // if consumer wants to call .query directly on return value
   pgConnection = pgConnectionArg
@@ -68,36 +142,16 @@ module.exports.setup = function setup(pgConnectionArg) {
   // but prints values to console
   dotTemplate.addHandler({
     expressionPrefix: '$PG',
-    valueMutator: (value, templateArgs, ...tailingArgs) => {
-      const [pgQueryArgs] = tailingArgs.slice(-1)
-      let index = pgQueryArgs.indexOf(value)
-
-      if (index === -1) {
-        index = pgQueryArgs.length
-        pgQueryArgs.push(value)
-      }
-
-      return `$${index + 1}`
-    },
-    logMutator: value => value
+    valueMutator: valueMutator,
+    logMutator: value => valuePrinted(value)
   })
 
   // returns var index references for postgres queries
   // but prints redacted message to console
   dotTemplate.addHandler({
     expressionPrefix: '!PG',
-    valueMutator: (value, templateArgs, ...tailingArgs) => {
-      const [pgQueryArgs] = tailingArgs.slice(-1)
-      let index = pgQueryArgs.indexOf(value)
-
-      if (index === -1) {
-        index = pgQueryArgs.length
-        pgQueryArgs.push(value)
-      }
-
-      return `$${index + 1}`
-    },
-    logMutator: () => PG_DOT_TEMPLATE_REDACTION_MESSAGE
+    valueMutator: valueMutator,
+    logMutator: value => valuePrinted(value, true)
   })
 
   setupCalled = true
