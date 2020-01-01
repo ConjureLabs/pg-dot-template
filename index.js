@@ -74,7 +74,9 @@ function getQueryArgPlaceholder(value, pgQueryArgs) {
 function getValueType(value) {
   let valueType = typeof value
   if (valueType === 'object') {
-    if (value instanceof Date) {
+    if (value === null) {
+      valueType = 'null'
+    } else if (value instanceof Date) {
       valueType = 'date'
     } else if (Array.isArray(value)) {
       valueType = 'array'
@@ -102,7 +104,10 @@ function valuePlaceholders(value, pgQueryArgs, nested = false) {
 
     case 'date':
     case 'number':
+    case 'bigint':
     case 'string':
+    case 'boolean':
+    case 'null':
       return getQueryArgPlaceholder(value, pgQueryArgs)
 
     default:
@@ -123,7 +128,18 @@ function valuePrinted(value, redacted = false, nested = false) {
       return value.map(subvalue => valuePrinted(subvalue, redacted, true)).join(', ')
     
     case 'number':
+    case 'boolean':
       return redacted ? PG_DOT_TEMPLATE_REDACTION_MESSAGE : value
+
+    case 'null':
+      return redacted ? PG_DOT_TEMPLATE_REDACTION_MESSAGE : 'NULL'
+
+    case 'date':
+      if (redacted) {
+        return `'${PG_DOT_TEMPLATE_REDACTION_MESSAGE}'`
+      }
+      const treatedDate = value.toISOString()
+      return `'${treatedDate}'`
 
     default:
       if (redacted) {
