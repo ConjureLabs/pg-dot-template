@@ -5,12 +5,11 @@ pgDotTemplate.setup()
 
 async function main() {
   // pulls in template
-  const template = pgDotTemplate('select-accounts')
+  const template = pgDotTemplate('select-user-id-by-emails')
 
   // replace expressions
   const query = await template({
-    emailMatch: '%@gmail.com',
-    idStart: 4
+    emails: ['abc@abc.abc', 'jkl@jkl.jkl', 'xyz@xyz.xyz']
   })
 
   console.log('console.log result:')
@@ -18,5 +17,8 @@ async function main() {
 
   console.log('literal value:')
   console.log(query.toString())
+
+  console.log('query args:')
+  console.log(query.queryArgs)
 }
 main()

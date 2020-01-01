@@ -181,6 +181,21 @@ const result = await queryString.query()
 console.log(result.queryArgs)
 ```
 
+### types
+
+this library supports:
+
+- strings
+- numbers
+- bigints
+- booleans
+- `null`
+- arrays of the above
+
+it does not support `undefined` or nested arrays
+
+any unexpected values will trigger an error to be thrown
+
 ### using pg's Pool
 
 if you plan to use [`Pool`](https://node-postgres.com/features/pooling) to connect, you will want to call `.connect()` before each query, and then `release()` when finished
