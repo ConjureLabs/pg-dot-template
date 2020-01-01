@@ -11,7 +11,7 @@ async function main() {
   const query = await template({
     emailMatch: '%@gmail.com',
     idStart: 4
-  }, ['%@gmail.com', 4])
+  })
 
   console.log('console.log result:')
   console.log(query)
