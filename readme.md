@@ -212,3 +212,9 @@ pgDotTemplate.setup({
   }
 })
 ```
+
+### changing the redacted message
+
+by default any redaction will show in terminal as `<REDACTED>`
+
+you can change this string by setting the enironment variable `PG_DOT_TEMPLATE_REDACTION_MESSAGE`
