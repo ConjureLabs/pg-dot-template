@@ -53,7 +53,7 @@ module.exports = function pgDotTemplate(path) {
   }
 
   prepare.query = async (...args) => {
-    const preparedTemplate = await preparedTemplate(...args)
+    const preparedTemplate = await prepare(...args)
     return preparedTemplate.query()
   }
 
