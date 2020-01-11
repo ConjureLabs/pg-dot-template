@@ -1,7 +1,7 @@
 const dotTemplate = require('@conjurelabs/dot-template')
 
 const { PG_DOT_TEMPLATE_REDACTION_MESSAGE = '<REDACTED>' } = process.env
-let setupCalled = false
+const noOp = () => {}
 let pgConnection
 
 // proxy to dotTemplate
@@ -9,26 +9,20 @@ module.exports = function pgDotTemplate(path) {
   // enforce path ending in .sql
   path = path.replace(/(?:\.sql)?\s*$/i, '.sql')
 
-  if (setupCalled === false) {
-    throw new Error('pg-dot-template requires .setup() before usage')
-  }
-
   const dotTemplatePrepare = dotTemplate(path)
 
   const prepare = async (values, ...tailingArgs) => {
-    if (setupCalled === false) {
-      throw new Error('pg-dot-template requires .setup() before usage')
-    }
-
     const queryArgs = [] // appended as values are evaluated
-    const preparedTemplate = await dotTemplatePrepare(values, ...tailingArgs, queryArgs)
+    const queryKeys = [] // tracks a 1:1 index for values[propName] to queryArgs
 
-    // supporting .text, which pg requires
-    Object.defineProperty(preparedTemplate, 'text', {
-      value: preparedTemplate.toString(),
-      writable: false,
-      enumerable: false
-    })
+    const preparedTemplate = await dotTemplatePrepare(values, ...tailingArgs, queryArgs, queryKeys)
+
+    // // supporting .text, which pg requires
+    // Object.defineProperty(preparedTemplate, 'text', {
+    //   value: preparedTemplate.toString(),
+    //   writable: false,
+    //   enumerable: false
+    // })
 
     // supporting .queryArgs for both the user and query
     Object.defineProperty(preparedTemplate, 'queryArgs', {
@@ -43,7 +37,7 @@ module.exports = function pgDotTemplate(path) {
         if (pgConnection === undefined) {
           throw new ReferenceError('.query expects a valid pg connection to be passed to .setup(connection)')
         }
-        return pgConnection.query(preparedTemplate, queryArgs)
+        return pgConnection.query(preparedTemplate.toString().slice(), queryArgs)
       },
       writable: false,
       enumerable: false
@@ -60,68 +54,108 @@ module.exports = function pgDotTemplate(path) {
   return prepare
 }
 
-function getQueryArgPlaceholder(value, pgQueryArgs) {
-  let index = pgQueryArgs.indexOf(value)
+/*
+  returns the 'type' of a single value
+  getType({}) // 'object'
+  getType([]) // 'array'
+  getType('') // 'string'
+  getType(12) // 'number'
+  getType(5n) // 'bigint'
+  getType(new Date()) // 'date'
+  getType(new Error()) // 'error'
+  gotchyas:
+    - only basic arrays will return 'array' - Int8Array and others will return 'object'
+    - anything not determined will return 'object'
+    - this does not differentiate between things like functions and async functions
+    - set up for Node, tested on v12 - not set up for browsers
+ */
+function getType(value) {
+  // captures primitives
+  // may give `'object'` or other value if a custom class
+  // overrides the expected `.valueOf()`
+  const primitiveValue = value && value.valueOf && value.valueOf.toString() === 'function valueOf() { [native code] }' ? value.valueOf() : value
+  let valueType = typeof primitiveValue
 
-  if (index === -1) {
-    index = pgQueryArgs.length
-    pgQueryArgs.push(value)
+  if (valueType !== 'object') {
+    return valueType
   }
 
-  return `$${index + 1}`
-}
+  // the following code deals with built-in objects
+  // that are not primitives
+  // (thus `typeof` is `'object'`)
 
-function getValueType(value) {
-  let valueType = typeof value
-  if (valueType === 'object') {
-    if (value === null) {
-      valueType = 'null'
-    } else if (value instanceof Date) {
-      valueType = 'date'
-    } else if (Array.isArray(value)) {
-      valueType = 'array'
-    }
+  // undefined is a primitive
+  // null is a built-in value
+  if (value === null) {
+    return 'null'
   }
-  return valueType
+
+  if (Array.isArray(value)) {
+    return 'array'
+  }
+
+  if (value instanceof Date) {
+    return 'date'
+  }
+
+  if (value instanceof Error) {
+    return 'error'
+  }
+
+  if (value instanceof RegExp) {
+    return 'regexp'
+  }
+
+  if (
+    value instanceof Map ||
+    value instanceof WeakMap
+  ) {
+    return 'map'
+  }
+
+  if (
+    value instanceof Set ||
+    value instanceof WeakSet
+  ) {
+    return 'set'
+  }
+
+  if (value instanceof Promise) {
+    return 'promise'
+  }
+
+  return 'object'
 }
 
-
-function valueMutator(value, templateArgs, ...tailingArgs) {
-  const [pgQueryArgs] = tailingArgs.slice(-1)
-
-  return valuePlaceholders(value, pgQueryArgs)
-}
-
-function valuePlaceholders(value, pgQueryArgs, nested = false) {
-  const valueType = getValueType(value)
+function valuePlaceholders(value, pgIndex, nested = false) {
+  const valueType = getType(value)
 
   switch(valueType) {
     case 'array':
       if (nested) {
         throw new TypeError('pg-dot-template does not support nested arrays')
       }
-      return value.map(subvalue => valuePlaceholders(subvalue, pgQueryArgs, true)).join(', ')
+      return value.map(subvalue => valuePlaceholders(subvalue, pgIndex, true)).join(', ')
 
+    case 'number':
+    case 'boolean':
+    case 'null':
     case 'date':
     case 'number':
     case 'bigint':
     case 'string':
-    case 'boolean':
-    case 'null':
-      return getQueryArgPlaceholder(value, pgQueryArgs)
+      return `$${pgIndex}`
 
     default:
       throw new TypeError(`pg-dot-template ${!nested ? '' : 'nested '}expression (${valueType}) had an unexpected value: ${value}`)
   }
-
-  return queryArgIndex
 }
 
 // this func does not need to throw,
 // since it should have within valuePlaceholders
 // by this point
 function valuePrinted(value, redacted = false, nested = false) {
-  const valueType = getValueType(value)
+  const valueType = getType(value)
 
   switch(valueType) {
     case 'array':
@@ -150,25 +184,90 @@ function valuePrinted(value, redacted = false, nested = false) {
   }
 }
 
+class ValueWrapper {
+  constructor({ value, valueOfApplied, printed }) {
+    this.value = value
+    this.printed = printed
+  }
+
+  valueOf() {
+    return this.value
+  }
+
+  toString() {
+    return this.printed()
+  }
+}
+
+// returns var index references for postgres queries
+// but prints values to console
+dotTemplate.addHandler({
+  expressionPrefix: '$PG',
+  valuesObjectMutator: (values, type, ...tailingArgs) => {
+    const [queryArgs, queryKeys] = tailingArgs.slice(-2)
+
+    return new Proxy(values, {
+      get: (target, property) => {
+        const actualValue = Reflect.get(target, property)
+
+        if (type === 'logged') {
+          return valuePrinted(actualValue)
+        }
+
+        return new ValueWrapper({
+          value: actualValue,
+          printed: () => {
+            const existingIndex = queryKeys.indexOf(property)
+
+            if (existingIndex > -1) {
+              return valuePlaceholders(queryArgs[existingIndex], existingIndex + 1)
+            }
+
+            queryKeys.push(property)
+            queryArgs.push(actualValue)
+            return valuePlaceholders(actualValue, queryKeys.length)
+          }
+        })
+      }
+    })
+  }
+})
+
+// returns var index references for postgres queries
+// but prints redacted message to console
+dotTemplate.addHandler({
+  expressionPrefix: '!PG',
+  valuesObjectMutator: (values, type, ...tailingArgs) => {
+    const [queryArgs, queryKeys] = tailingArgs.slice(-2)
+
+    return new Proxy(values, {
+      get: (target, property) => {
+        const actualValue = Reflect.get(target, property)
+
+        if (type === 'logged') {
+          return valuePrinted(actualValue, true)
+        }
+
+        return new ValueWrapper({
+          value: actualValue,
+          printed: () => {
+            const existingIndex = queryKeys.indexOf(property)
+
+            if (existingIndex > -1) {
+              return valuePlaceholders(queryArgs[existingIndex], existingIndex + 1)
+            }
+
+            queryKeys.push(property)
+            queryArgs.push(actualValue)
+            return valuePlaceholders(actualValue, queryKeys.length)
+          }
+        })
+      }
+    })
+  }
+})
+
 module.exports.setup = function setup(pgConnectionArg) {
   // if consumer wants to call .query directly on return value
   pgConnection = pgConnectionArg
-
-  // returns var index references for postgres queries
-  // but prints values to console
-  dotTemplate.addHandler({
-    expressionPrefix: '$PG',
-    valueMutator: valueMutator,
-    logMutator: value => valuePrinted(value)
-  })
-
-  // returns var index references for postgres queries
-  // but prints redacted message to console
-  dotTemplate.addHandler({
-    expressionPrefix: '!PG',
-    valueMutator: valueMutator,
-    logMutator: value => valuePrinted(value, true)
-  })
-
-  setupCalled = true
 }
