@@ -17,13 +17,6 @@ module.exports = function pgDotTemplate(path) {
 
     const preparedTemplate = await dotTemplatePrepare(values, ...tailingArgs, queryArgs, queryKeys)
 
-    // // supporting .text, which pg requires
-    // Object.defineProperty(preparedTemplate, 'text', {
-    //   value: preparedTemplate.toString(),
-    //   writable: false,
-    //   enumerable: false
-    // })
-
     // supporting .queryArgs for both the user and query
     Object.defineProperty(preparedTemplate, 'queryArgs', {
       value: queryArgs,
