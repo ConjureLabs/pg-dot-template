@@ -26,6 +26,6 @@
     "pg": ">= 7.0.0"
   },
   "devDependencies": {
-    "@conjurelabs/dot-template": "2.0.0"
+    "@conjurelabs/dot-template": ">=2.1.0"
   }
 }
