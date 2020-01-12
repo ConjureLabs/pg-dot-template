@@ -196,6 +196,8 @@ it does not support `undefined` or nested arrays
 
 any unexpected values will trigger an error to be thrown
 
+arrays will not be auto-wrapped in `()`s
+
 ### using pg's Pool
 
 if you plan to use [`Pool`](https://node-postgres.com/features/pooling) to connect, you will want to call `.connect()` before each query, and then `release()` when finished
