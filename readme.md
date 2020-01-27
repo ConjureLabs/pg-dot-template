@@ -34,7 +34,7 @@ const client = new Client()
 client.connect()
 
 // required setup if using .query
-pgDotTemplate.onQuery = (queryString, queryArgs) => {
+pgDotTemplate.handleQuery = (queryString, queryArgs) => {
   return client.query(queryString, queryArgs)
 }
 
@@ -205,7 +205,7 @@ if you plan to use [`Pool`](https://node-postgres.com/features/pooling) to conne
 ```js
 const pool = new Pool()
 
-pgDotTemplate.onQuery = async (queryString, queryArgs) => {
+pgDotTemplate.handleQuery = async (queryString, queryArgs) => {
   const connection = await pool.connect()
 
   return new Promise(async (resolve, reject) => {
