@@ -26,7 +26,7 @@ module.exports = function pgDotTemplate(path) {
     // convenient method to query pg
     Object.defineProperty(preparedTemplate, 'query', {
       value: () => {
-        return module.exports.onQuery(preparedTemplate.toString().slice(), queryArgs)
+        return module.exports.handleQuery(preparedTemplate.toString().slice(), queryArgs)
       },
       writable: false,
       enumerable: false
@@ -256,4 +256,4 @@ dotTemplate.addHandler({
   }
 })
 
-module.exports.onQuery = () => throw new Error('.onQuery() has not been set up')
+module.exports.handleQuery = () => throw new Error('.handleQuery() has not been set up')

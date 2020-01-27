@@ -7,7 +7,7 @@ const client = new Client()
 client.connect()
 
 // needed to support .query
-pgDotTemplate.onQuery = (queryString, queryArgs) => {
+pgDotTemplate.handleQuery = (queryString, queryArgs) => {
   return client.query(queryString, queryArgs)
 }
 
