@@ -27,5 +27,6 @@
   },
   "devDependencies": {
     "@conjurelabs/dot-template": ">=2.1.0"
-  }
+  },
+  "dependencies": {}
 }
