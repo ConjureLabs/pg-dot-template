@@ -1,9 +1,6 @@
 const pgDotTemplate = require('@conjurelabs/pg-dot-template')
 const { Client } = require('pg')
 
-// required setup - appends handlers to dot-template
-pgDotTemplate.setup()
-
 // see https://node-postgres.com/features/connecting
 // requires environment variables
 const client = new Client()

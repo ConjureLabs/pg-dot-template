@@ -6,10 +6,10 @@ const { Client } = require('pg')
 const client = new Client()
 client.connect()
 
-// required setup - appends handlers to dot-template
-// this example passes a connected `client`
-// you can also pass a connected `pool`
-pgDotTemplate.setup(client)
+// needed to support .query
+pgDotTemplate.onQuery = (queryString, queryArgs) => {
+  return client.query(queryString, queryArgs)
+}
 
 async function main() {
   // pulls in template

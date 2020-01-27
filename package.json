@@ -1,6 +1,6 @@
 {
   "name": "@conjurelabs/pg-dot-template",
-  "version": "1.2.0",
+  "version": "2.0.0-rc1",
   "description": "templatized postgres sql files",
   "main": "index.js",
   "scripts": {
@@ -27,5 +27,6 @@
   },
   "devDependencies": {
     "@conjurelabs/dot-template": ">=2.1.0"
-  }
+  },
+  "dependencies": {}
 }
