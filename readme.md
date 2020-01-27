@@ -33,10 +33,10 @@ const pgDotTemplate = require('@conjurelabs/pg-dot-template')
 const client = new Client()
 client.connect()
 
-// required setup - appends handlers to dot-template
-// postgres client is optional,
-// but required if you call .query
-pgDotTemplate.setup(client)
+// required setup if using .query
+pgDotTemplate.onQuery = (queryString, queryArgs) => {
+  return client.query(queryString, queryArgs)
+}
 
 async function main() {
   // pulls in template
@@ -200,34 +200,31 @@ arrays will not be auto-wrapped in `()`s
 
 ### using pg's Pool
 
-if you plan to use [`Pool`](https://node-postgres.com/features/pooling) to connect, you will want to call `.connect()` before each query, and then `release()` when finished
-
-passing a general `connection` to `setup()` may seem problematic, but you easily solve this with a simply wrapper:
+if you plan to use [`Pool`](https://node-postgres.com/features/pooling) to connect, you will want to call `.connect()` before each query, and then `release()` when finished:
 
 ```js
 const pool = new Pool()
 
-pgDotTemplate.setup({
-  query: async (...args) => {
-    const connection = await pool.connect()
-    return new Promise(async (resolve, reject) => {
-      let result, err
-      
-      try {
-        result = await connection.query(...args)
-      } catch(tryErr) {
-        err = tryErr
-      } finally {
-        connection.release()
-      }
+pgDotTemplate.onQuery = async (queryString, queryArgs) => {
+  const connection = await pool.connect()
 
-      if (err) {
-        return reject(err)
-      }
-      resolve(result)
-    })
-  }
-})
+  return new Promise(async (resolve, reject) => {
+    let result, err
+    
+    try {
+      result = await connection.query(queryString, queryArgs)
+    } catch(tryErr) {
+      err = tryErr
+    } finally {
+      connection.release()
+    }
+
+    if (err) {
+      return reject(err)
+    }
+    resolve(result)
+  })
+}
 ```
 
 ### changing the redacted message
