@@ -256,4 +256,6 @@ dotTemplate.addHandler({
   }
 })
 
-module.exports.handleQuery = () => throw new Error('.handleQuery() has not been set up')
+module.exports.handleQuery = () => {
+  throw new Error('.handleQuery() has not been set up')
+}
