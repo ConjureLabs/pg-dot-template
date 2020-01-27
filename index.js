@@ -2,7 +2,7 @@ const dotTemplate = require('@conjurelabs/dot-template')
 
 const { PG_DOT_TEMPLATE_REDACTION_MESSAGE = '<REDACTED>' } = process.env
 const noOp = () => {}
-let pgConnection
+let onQuery = () => throw new Error('.onQuery() has not been set up')
 
 // proxy to dotTemplate
 module.exports = function pgDotTemplate(path) {
@@ -27,10 +27,7 @@ module.exports = function pgDotTemplate(path) {
     // convenient method to query pg
     Object.defineProperty(preparedTemplate, 'query', {
       value: () => {
-        if (pgConnection === undefined) {
-          throw new ReferenceError('.query expects a valid pg connection to be passed to .setup(connection)')
-        }
-        return pgConnection.query(preparedTemplate.toString().slice(), queryArgs)
+        return onQuery(preparedTemplate.toString().slice(), queryArgs)
       },
       writable: false,
       enumerable: false
@@ -260,7 +257,7 @@ dotTemplate.addHandler({
   }
 })
 
-module.exports.setup = function setup(pgConnectionArg) {
+module.exports.onQuery = function onQuery(handler) {
   // if consumer wants to call .query directly on return value
-  pgConnection = pgConnectionArg
+  onQuery = onQuery
 }
