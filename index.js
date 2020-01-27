@@ -26,7 +26,7 @@ module.exports = function pgDotTemplate(path) {
     // convenient method to query pg
     Object.defineProperty(preparedTemplate, 'query', {
       value: () => {
-        return module.exports.handleQuery(preparedTemplate.toString().slice(), queryArgs)
+        return module.exports.handleQuery(preparedTemplate.toString().slice(), queryArgs, ...tailingArgs)
       },
       writable: false,
       enumerable: false
