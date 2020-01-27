@@ -25,8 +25,8 @@ module.exports = function pgDotTemplate(path) {
 
     // convenient method to query pg
     Object.defineProperty(preparedTemplate, 'query', {
-      value: () => {
-        return module.exports.handleQuery(preparedTemplate.toString().slice(), queryArgs, ...tailingArgs)
+      value: (...tailingQueryArgs) => {
+        return module.exports.handleQuery(preparedTemplate.toString().slice(), queryArgs, ...tailingQueryArgs)
       },
       writable: false,
       enumerable: false
@@ -35,9 +35,9 @@ module.exports = function pgDotTemplate(path) {
     return preparedTemplate
   }
 
-  prepare.query = async (...args) => {
-    const preparedTemplate = await prepare(...args)
-    return preparedTemplate.query()
+  prepare.query = async (values, ...tailingArgs) => {
+    const preparedTemplate = await prepare(values, ...tailingArgs)
+    return preparedTemplate.query(...tailingArgs)
   }
 
   return prepare
