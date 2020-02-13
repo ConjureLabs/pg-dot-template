@@ -62,7 +62,7 @@ function getType(value) {
   // captures primitives
   // may give `'object'` or other value if a custom class
   // overrides the expected `.valueOf()`
-  const primitiveValue = value && value.valueOf && value.valueOf.toString() === 'function valueOf() { [native code] }' ? value.valueOf() : value
+  const primitiveValue = !(value instanceof Date) && value && value.valueOf && value.valueOf.toString() === 'function valueOf() { [native code] }' ? value.valueOf() : value
   let valueType = typeof primitiveValue
 
   if (valueType !== 'object') {
