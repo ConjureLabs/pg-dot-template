@@ -79,6 +79,8 @@ main()
 
 this library adds two unique handlers
 
+**!!!** keep in mind that postgres only supports these replacements in `where` clauses, not in `select`, `set`, etc
+
 #### $PG{expression}
 
 `$PG{expression}` prints the value of `expression` to console, while passing an index reference (like `$1`) in the literal query
