@@ -22,11 +22,8 @@
     "node": ">=10.0.0"
   },
   "peerDependencies": {
-    "@conjurelabs/dot-template": ">= 2.0.0",
+    "@conjurelabs/dot-template": "2.2.0",
     "pg": ">= 7.0.0"
-  },
-  "devDependencies": {
-    "@conjurelabs/dot-template": "2.2.0"
   },
   "dependencies": {}
 }
