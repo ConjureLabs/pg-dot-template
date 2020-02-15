@@ -26,7 +26,7 @@ module.exports = function pgDotTemplate(path) {
     // convenient method to query pg
     Object.defineProperty(preparedTemplate, 'query', {
       value: (...tailingQueryArgs) => {
-        return module.exports.handleQuery(preparedTemplate.toString().slice(), queryArgs, ...tailingQueryArgs)
+        return module.exports.handleQuery(preparedTemplate.toString().slice(), flatten(queryArgs), ...tailingQueryArgs)
       },
       writable: false,
       enumerable: false
@@ -41,6 +41,20 @@ module.exports = function pgDotTemplate(path) {
   }
 
   return prepare
+}
+
+// flattens query args
+// assumes nested arrays are shallow
+function flatten(arr) {
+  const result = []
+  for (let value of arr) {
+    if (Array.isArray(value)) {
+      result.push(...value)
+    } else {
+      result.push(value)
+    }
+  }
+  return result
 }
 
 /*
