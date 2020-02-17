@@ -138,7 +138,7 @@ function valuePlaceholders(value, pgIndex, nested = false) {
       if (nested) {
         throw new TypeError('pg-dot-template does not support nested arrays')
       }
-      return value.map(subvalue => valuePlaceholders(subvalue, pgIndex, true)).join(', ')
+      return value.map((subvalue, arrayIndex) => valuePlaceholders(subvalue, pgIndex + arrayIndex, true)).join(', ')
 
     case 'number':
     case 'boolean':
@@ -202,6 +202,14 @@ class ValueWrapper {
   }
 }
 
+function getQueryKeysTotalLength(queryKeys) {
+  return Object.keys(queryKeys).reduce((count, key) => {
+    return count + (
+      Array.isArray(queryKeys[key]) ? queryKeys[key].length : 1
+    )
+  }, 0)
+}
+
 // returns var index references for postgres queries
 // but prints values to console
 dotTemplate.addHandler({
@@ -228,7 +236,7 @@ dotTemplate.addHandler({
 
             queryKeys.push(property)
             queryArgs.push(actualValue)
-            return valuePlaceholders(actualValue, queryKeys.length)
+            return valuePlaceholders(actualValue, getQueryKeysTotalLength(queryKeys))
           }
         })
       }
@@ -262,7 +270,7 @@ dotTemplate.addHandler({
 
             queryKeys.push(property)
             queryArgs.push(actualValue)
-            return valuePlaceholders(actualValue, queryKeys.length)
+            return valuePlaceholders(actualValue, getQueryKeysTotalLength(queryKeys))
           }
         })
       }
