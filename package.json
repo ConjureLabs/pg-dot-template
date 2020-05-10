@@ -25,5 +25,7 @@
     "@conjurelabs/dot-template": "2.2.0",
     "pg": ">= 7.0.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@conjurelabs/get-type": "1.0.0"
+  }
 }
