@@ -1,4 +1,5 @@
 const dotTemplate = require('@conjurelabs/dot-template')
+const getType = require('@conjurelabs/get-type')
 
 const { PG_DOT_TEMPLATE_REDACTION_MESSAGE = '<REDACTED>' } = process.env
 const noOp = () => {}
@@ -55,79 +56,6 @@ function flatten(arr) {
     }
   }
   return result
-}
-
-/*
-  returns the 'type' of a single value
-  getType({}) // 'object'
-  getType([]) // 'array'
-  getType('') // 'string'
-  getType(12) // 'number'
-  getType(5n) // 'bigint'
-  getType(new Date()) // 'date'
-  getType(new Error()) // 'error'
-  gotchyas:
-    - only basic arrays will return 'array' - Int8Array and others will return 'object'
-    - anything not determined will return 'object'
-    - this does not differentiate between things like functions and async functions
-    - set up for Node, tested on v12 - not set up for browsers
- */
-function getType(value) {
-  // captures primitives
-  // may give `'object'` or other value if a custom class
-  // overrides the expected `.valueOf()`
-  const primitiveValue = !(value instanceof Date) && value && value.valueOf && value.valueOf.toString() === 'function valueOf() { [native code] }' ? value.valueOf() : value
-  let valueType = typeof primitiveValue
-
-  if (valueType !== 'object') {
-    return valueType
-  }
-
-  // the following code deals with built-in objects
-  // that are not primitives
-  // (thus `typeof` is `'object'`)
-
-  // undefined is a primitive
-  // null is a built-in value
-  if (value === null) {
-    return 'null'
-  }
-
-  if (Array.isArray(value)) {
-    return 'array'
-  }
-
-  if (value instanceof Date) {
-    return 'date'
-  }
-
-  if (value instanceof Error) {
-    return 'error'
-  }
-
-  if (value instanceof RegExp) {
-    return 'regexp'
-  }
-
-  if (
-    value instanceof Map ||
-    value instanceof WeakMap
-  ) {
-    return 'map'
-  }
-
-  if (
-    value instanceof Set ||
-    value instanceof WeakSet
-  ) {
-    return 'set'
-  }
-
-  if (value instanceof Promise) {
-    return 'promise'
-  }
-
-  return 'object'
 }
 
 function valuePlaceholders(value, pgIndex, nested = false) {
