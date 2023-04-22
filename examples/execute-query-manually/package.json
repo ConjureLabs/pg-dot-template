@@ -8,7 +8,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@conjurelabs/dot-template": "2.0.0",
     "@conjurelabs/pg-dot-template": "file:../..",
     "pg": "7.17.0"
   }
